@@ -1,0 +1,4 @@
+bin/
+*.map
+!a.map
+!b.map
