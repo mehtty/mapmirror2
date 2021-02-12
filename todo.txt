@@ -1,3 +1,9 @@
-- rotate - add config parameter for axis coord
+- rotate 
+	- add config parameter for axis coord
+	- allow to rotate at right angles
+	- allow to rotate arbitrary degrees (probably not)
+	- add horizontal flip
+	- add vertical flip
+	- add option to overlay rotation
 - ent replace - add more in-depth query/update system
 - gui basics

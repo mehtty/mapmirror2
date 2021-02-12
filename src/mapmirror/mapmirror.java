@@ -8,6 +8,8 @@ import qmap2.*;
 public class mapmirror {
 	public static final String VERSION = "0.2j";
 	
+	public static final String FIELD_ANGLE = "angle", FIELD_ORIGIN = "origin";
+	
 	public static boolean DEBUG = false;
 	public ConfigFile config = new ConfigFile();
 	public QMapFile map = new QMapFile();
@@ -144,7 +146,44 @@ public class mapmirror {
 		}
 		return count;
 	}
-
+	
+	public void rotate(Vector<MapThing> things) {
+		for(int i = 0; i < things.size(); i++) {
+			MapThing mt = things.get(i);
+			if(mt == null) continue;
+			for(int j = 0; j < mt.faces.size(); j++) {
+				BrushFace bf = mt.faces.get(j);
+				if(bf == null) continue;
+				bf.rotate();
+			}
+			for(int j = 0; j < mt.fields.size(); j++) {
+				EntField ef = mt.fields.get(j);
+				if(ef == null) continue;
+				if(FIELD_ORIGIN.equals(ef.name)) {
+					QVector v = new QVector();
+					v.parse(ef.value);
+					v.rotate();
+					ef.value = v.toString();
+				} else if(FIELD_ANGLE.equals(ef.name)) {
+					try {
+						double angle = Double.parseDouble(ef.value);
+						if(angle >= 0) {
+							angle = (angle + 180) % 360;
+							ef.value = QVector.format(angle);
+						}
+					} catch (NumberFormatException nfe) {
+						System.out.println("Failed to rotate angle of entity " + mt);
+					}
+				}
+			}
+			rotate(mt.subobjects);
+		}
+	}
+	
+	public void rotate() {
+		rotate(map.stuff);
+	}
+	
 	public void parseCmd(String[] args) {
 		if(args != null) {
 			for(int i = 0; i < args.length; i++) {
@@ -188,6 +227,10 @@ public class mapmirror {
 		m.map.loadFromFile(m.config.mapname);
 		System.out.println("Replaced " + m.replaceTextures() + " textures");
 		System.out.println("Replaced " + m.replaceEntities() + " fields");
+		if(m.config.rotate180) {
+			System.out.println("Rotating brushes 180 degrees...");
+			m.rotate();
+		}
 		System.out.println("Saving Map: " + m.config.outname);
 		m.map.saveToFile(m.config.outname);
 		System.out.println("Completed");

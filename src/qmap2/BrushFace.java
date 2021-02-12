@@ -49,4 +49,10 @@ public class BrushFace {
 	public String toString() {
 		return "( " + v1 + " ) ( " + v2 + " ) ( " + v3 + " ) " + texture + " " + QVector.format(xoffset) + " " + QVector.format(yoffset) + " " + QVector.format(rotation) + " " + QVector.format(xscale) + " " + QVector.format(yscale);
 	}
+	
+	public void rotate() {
+		if(v1 != null) v1.rotate();
+		if(v2 != null) v2.rotate();
+		if(v3 != null) v3.rotate();
+	}
 }

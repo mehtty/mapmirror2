@@ -11,7 +11,66 @@ public class QVector {
 		return "" + d;
 	}
 	
+	public void parse(String str) {
+		int stage = 0;
+		String tmp = "";
+		for(int i = 0; i < str.length(); i++) {
+			char c = str.charAt(i);
+			if(c == '-' || c == '.' || Character.isDigit(c)) {
+				switch(stage) {
+				case 0: 
+				case 2: 
+				case 4: 
+					stage++;
+					tmp = "" + c;
+					break;
+				case 1:
+				case 3:
+				case 5:
+					tmp += c;
+				}
+			} else {
+				switch(stage) {
+				case 0:
+				case 2:
+				case 4:
+					break;
+				case 1:
+					stage = 2;
+					try {
+						x = Double.parseDouble(tmp);
+					} catch (NumberFormatException nfe) {}
+					break;
+				case 3:
+					stage = 4;
+					try {
+						y = Double.parseDouble(tmp);
+					} catch (NumberFormatException nfe) {}
+					break;
+				}
+			}
+		}
+		try {
+			z = Double.parseDouble(tmp);
+		} catch (NumberFormatException nfe) {}
+	}
+	
 	public String toString() {
 		return "" + format(x) + " " + format(y) + " " + format(z);
+	}
+	
+	public void rotate() {
+		x = x * -1;
+		y = y * -1;
+	}
+	
+	public static void main(String[] args) {
+		QVector v = new QVector();
+		v.parse("\"1 2 3\"");
+		System.out.println(v);
+		v.parse("4 5.8 6");
+		System.out.println(v);
+		v.parse("aefas 7 asfeasef ase8dfa -9");
+		System.out.println(v);
 	}
 }
