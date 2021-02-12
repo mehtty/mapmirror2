@@ -1,0 +1,3 @@
+- rotate - add config parameter for axis coord
+- ent replace - add more in-depth query/update system
+- gui basics

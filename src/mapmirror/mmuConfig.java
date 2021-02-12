@@ -42,7 +42,7 @@ public class mmuConfig {
 				} else if(line.startsWith(PREFIX_WSIZE)) {
 					if(div > -1 && div < line.length()) {
 						try {
-							String[] s = line.substring(div + 1).trim().split(SEP);
+							String[] s = line.substring(div + 1).trim().split(SEP, -1);
 							if(s.length > 1) {
 								windowSize.width = Integer.parseInt(s[0].trim());
 								windowSize.height = Integer.parseInt(s[1].trim());
@@ -54,7 +54,7 @@ public class mmuConfig {
 				} else if(line.startsWith(PREFIX_WLOCATION)) {
 					if(div > -1 && div < line.length()) {
 						try {
-							String[] s = line.substring(div + 1).trim().split(SEP);
+							String[] s = line.substring(div + 1).trim().split(SEP, -1);
 							if(s.length > 1) {
 								windowLocation.x = Integer.parseInt(s[0].trim());
 								windowLocation.y = Integer.parseInt(s[1].trim());

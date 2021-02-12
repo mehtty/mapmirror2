@@ -10,7 +10,7 @@ public class EntField {
 			value = "";
 			return;
 		}
-		String[] s = str.split("\"");
+		String[] s = str.split("\"", -1);
 		if(s != null && s.length > 3) {
 			name = s[1];
 			value = s[3];

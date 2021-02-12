@@ -22,7 +22,7 @@ public class BrushFace {
 		if(str == null) {
 			return;
 		}
-		String[] s = str.split(" ");
+		String[] s = str.split(" ", -1);
 		if(s != null && s.length > 20) {
 			try {
 				v1.x = Double.parseDouble(s[1].trim());

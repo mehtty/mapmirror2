@@ -1,7 +1,7 @@
 package mmconfig;
 
 public class FieldReplacement {
-	public static int ACTION_NOTHING = 0, ACTION_MATCH_EMPTY = 1, ACTION_ADD_MISSING = 2, ACTION_DELETE_ENT = 4;
+	public static int ACTION_NOTHING = 0, ACTION_MATCH_EMPTY = 1, ACTION_ADD_MISSING = 2, ACTION_DELETE_ENT = 4, ACTION_DELETE_FIELD = 8;
 	
 	public final String div = "\"";
 	public final String bigdiv = "\" \"";
@@ -18,7 +18,7 @@ public class FieldReplacement {
 	
 	public boolean parse(String s) {
 		if(s == null) return false;
-		String[] ss = s.split(div);
+		String[] ss = s.split(div, -1);
 		if(ss.length < 9) return false;
 		classname = ss[1];
 		fieldname = ss[3];
@@ -33,7 +33,10 @@ public class FieldReplacement {
 		return true;
 	}
 
-	
+	public boolean isAction(int a) {
+		return (action & a) == a;
+	}
+		
 	public String toString() {
 		return div + classname + bigdiv + fieldname + bigdiv + oldValue + bigdiv + newValue + div + " " + action;
 	}

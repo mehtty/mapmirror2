@@ -36,7 +36,78 @@ public class mapmirror {
 		return count;
 	}
 	
-	public int replaceEntities(Vector<MapThing> things, FieldReplacement fr) {
+
+	public int replaceEntities(Vector<MapThing> things) {
+		if(things == null) {
+			return 0;
+		}
+		int count = 0;
+		Vector<MapThing> toDelete = new Vector<MapThing>();
+		for(int i = 0; i < things.size(); i++) {
+			MapThing mt = things.get(i);
+			if(mt == null) {
+				continue;
+			}
+			System.out.println("Checking thing " + i + ": " + mt.classname);
+			boolean deleting = false;
+			for(int k = 0; k < config.field_replacements.size(); k++) {
+				FieldReplacement fr = config.field_replacements.get(k);
+				if(fr == null || !fr.valid()) continue;
+				System.out.println("\tChecking against " + k + ": " + fr);
+				if(fr.classname.equals(mt.classname)) {
+					Vector<EntField> fieldsToDelete = new Vector<EntField>();
+					for(int j = 0; j < mt.fields.size(); j++) {
+						EntField ef = mt.fields.get(j);
+						if(ef == null) continue;
+						System.out.println("\t\tSo far, so good. Field " + j + "- " + ef.name + ":" + ef.value + " vs " + fr.fieldname + ":" + fr.oldValue + " -> " + fr.newValue);
+						System.out.println("\t\t\t(" + ef + ")");
+						
+						if(fr.fieldname.equals(ef.name)) {
+							System.out.println("\t\t\tFields match!");
+							if((!fr.isAction(FieldReplacement.ACTION_MATCH_EMPTY) && fr.oldValue.length() == 0) || fr.oldValue.equals(ef.value)) {
+								System.out.println("\t\t\tValues are compatible!");
+								if(fr.isAction(FieldReplacement.ACTION_DELETE_ENT)) {
+									System.out.println("\t\t\tEnt delete requested!");
+									toDelete.add(mt);
+									deleting = true;
+									break;
+								}
+								if(fr.isAction(FieldReplacement.ACTION_DELETE_FIELD)) {
+									System.out.println("\t\t\tField delete requested!");
+									fieldsToDelete.add(ef);
+									break;
+								}
+								ef.value = fr.newValue;
+								count++;
+								break;
+							}
+						}
+					}
+					System.out.println("\tDeleting fields: (before: " + mt.fields.size() + " - " + fieldsToDelete.size() + ")");
+					mt.fields.removeAll(fieldsToDelete);
+					System.out.println("\tDeleting fields: (after: " + mt.fields.size() + ")");
+					if(deleting) break;
+					if(fr.isAction(FieldReplacement.ACTION_ADD_MISSING)) {
+						EntField ef = new EntField();
+						ef.name = fr.fieldname;
+						ef.value = fr.newValue;
+						mt.fields.add(ef);
+					}
+				}
+			}
+			if(deleting) continue;
+			count += replaceEntities(mt.subobjects);
+		}
+		if(toDelete.size() > 0) {
+			things.removeAll(toDelete);
+		}
+		return count;
+	}
+	
+	public int replaceEntities() {
+		return replaceEntities(map.stuff);
+	}
+	public int replaceEntities2(Vector<MapThing> things, FieldReplacement fr) {
 		if(things == null || fr == null || !fr.valid()) {
 			return 0;
 		}
@@ -59,17 +130,17 @@ public class mapmirror {
 					}
 				}
 			}
-			count += replaceEntities(mt.subobjects, fr);
+			count += replaceEntities2(mt.subobjects, fr);
 		}
 		return count;
 	}
 	
-	public int replaceEntities() {
+	public int replaceEntities2() {
 		int count = 0;
 		for(int i = 0; i < config.field_replacements.size(); i++) {
 			FieldReplacement fr = config.field_replacements.get(i);
 			if(fr == null) continue;
-			count += replaceEntities(map.stuff, fr);
+			count += replaceEntities2(map.stuff, fr);
 		}
 		return count;
 	}
