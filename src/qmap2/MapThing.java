@@ -15,7 +15,7 @@ public class MapThing {
 	public static String START_FACE = "(";
 	public static String END_FACE = "\n";
 	
-	public final String BRUSH = "brush"; 
+	public final String BRUSH = "brush", WORLDSPAWN = "worldspawn"; 
 	
 	public QMapObjects qType = QMapObjects.None;
 	
@@ -103,7 +103,8 @@ public class MapThing {
 						comment = line;
 					}
 					//System.out.println("Mapthing returning " + line);
-					if("worldspawn".equals(classname)) {
+					if(WORLDSPAWN.equals(classname)) {
+						map.worldspawn = this;
 						String wadstr = getField("wad");
 						if(wadstr != null) {
 							String[] wadarr = wadstr.split(";");

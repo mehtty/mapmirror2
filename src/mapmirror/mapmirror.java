@@ -12,7 +12,7 @@ public class mapmirror {
 	
 	public static boolean DEBUG = false;
 	public ConfigFile config = new ConfigFile();
-	public QMapFile map = new QMapFile();
+	public QMapFile map = new QMapFile(), map_original = null;
 	
 	public mapmirror() {
 		config.filename = "mapmirror.conf";
@@ -147,14 +147,14 @@ public class mapmirror {
 		return count;
 	}
 	
-	public void rotate(Vector<MapThing> things) {
+	public void transform(Vector<MapThing> things) {
 		for(int i = 0; i < things.size(); i++) {
 			MapThing mt = things.get(i);
 			if(mt == null) continue;
 			for(int j = 0; j < mt.faces.size(); j++) {
 				BrushFace bf = mt.faces.get(j);
 				if(bf == null) continue;
-				bf.rotate();
+				bf.transform(config.flip_horizontal, config.flip_vertical, false, config.translate.x, config.translate.y, config.translate.z);
 			}
 			for(int j = 0; j < mt.fields.size(); j++) {
 				EntField ef = mt.fields.get(j);
@@ -162,13 +162,19 @@ public class mapmirror {
 				if(FIELD_ORIGIN.equals(ef.name)) {
 					QVector v = new QVector();
 					v.parse(ef.value);
-					v.rotate();
+					v.transform(config.flip_horizontal, config.flip_vertical, false, config.translate.x, config.translate.y, config.translate.z);
 					ef.value = v.toString();
 				} else if(FIELD_ANGLE.equals(ef.name)) {
 					try {
 						double angle = Double.parseDouble(ef.value);
 						if(angle >= 0) {
-							angle = (angle + 180) % 360;
+							if(config.flip_horizontal && config.flip_vertical) {
+								angle = (angle + 180) % 360;
+							} else if(config.flip_horizontal) {
+								angle = 180 - angle;
+							} else if(config.flip_vertical) {
+								angle = 360 - angle;
+							}
 							ef.value = QVector.format(angle);
 						}
 					} catch (NumberFormatException nfe) {
@@ -176,12 +182,25 @@ public class mapmirror {
 					}
 				}
 			}
-			rotate(mt.subobjects);
+			transform(mt.subobjects);
 		}
 	}
 	
-	public void rotate() {
-		rotate(map.stuff);
+	public void transform() {
+		transform(map.stuff);
+	}
+	
+	public void prepareOverlay() {
+		//map_original = map.clone();
+		map_original = new QMapFile();
+		map_original.loadFromFile(config.mapname);
+	}
+	
+	public void overlay() {
+		if(map_original == null) {
+			return;
+		}
+		map = map_original.merge(map);
 	}
 	
 	public void parseCmd(String[] args) {
@@ -225,11 +244,17 @@ public class mapmirror {
 		System.out.println("\tInput Map: " + m.config.mapname);
 		System.out.println("\tOutput Map: " + m.config.outname);
 		m.map.loadFromFile(m.config.mapname);
+		if(m.config.overlay) {
+			System.out.println("Overlay requested");
+			m.prepareOverlay();
+		}
 		System.out.println("Replaced " + m.replaceTextures() + " textures");
 		System.out.println("Replaced " + m.replaceEntities() + " fields");
-		if(m.config.rotate180) {
-			System.out.println("Rotating brushes 180 degrees...");
-			m.rotate();
+		System.out.println("Applying transformations: flip X: " + m.config.flip_horizontal + ", flip Y: " + m.config.flip_vertical + ", translate: " + m.config.translate);
+		m.transform();
+		if(m.config.overlay) {
+			System.out.println("Applying overlay...");
+			m.overlay();
 		}
 		System.out.println("Saving Map: " + m.config.outname);
 		m.map.saveToFile(m.config.outname);

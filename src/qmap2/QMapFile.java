@@ -10,6 +10,7 @@ public class QMapFile {
 	public Vector<MapThing> stuff = new Vector<>();
 	public Vector<String> wads = new Vector<>();
 	public Vector<Texture> textures = new Vector<>();
+	public MapThing worldspawn = null;
 
 	public void loadFromFile(String filename) {
 		BufferedReader bf;
@@ -82,5 +83,64 @@ public class QMapFile {
 		} catch (Exception ex) {
 			System.out.println("Error writing file " + filename + ": " + ex.getMessage());
 		}
+	}
+	
+	@SuppressWarnings("unchecked")
+	public QMapFile clone() {
+		QMapFile mf = new QMapFile();
+		try {
+			mf.name = new String(name);
+			mf.stuff = (Vector<MapThing>) stuff.clone();
+			mf.wads = (Vector<String>) wads.clone();
+			mf.textures = (Vector<Texture>) textures.clone();
+		} catch (Exception ex) {
+			System.out.println("Error cloning Map File " + name);
+		}
+		return mf;
+	}
+	
+	public QMapFile merge(QMapFile target) {
+		if(target == null || target.stuff == null) return clone();
+		QMapFile mf = this;
+		for(int i = 0; i < target.stuff.size(); i++) {
+			MapThing mt = target.stuff.get(i);
+			if(mt == target.worldspawn) {
+				continue;
+			}
+			mf.stuff.add(mt);
+		}
+		if(mf.worldspawn != null && target.worldspawn != null) {
+			//override fields with new values if exist, otherwise merge sets
+			Vector<EntField> toAdd = new Vector<EntField>();
+			for(int i = 0; i < target.worldspawn.fields.size(); i++) {
+				EntField tef = target.worldspawn.fields.get(i);
+				if(tef == null) continue;
+				boolean found = false;
+				for(int j = 0; j < mf.worldspawn.fields.size(); j++) {
+					EntField mef = mf.worldspawn.fields.get(j);
+					if(mef == null) continue;
+					if(tef.name == mef.name) {
+						mef.value = tef.value;
+						found = true;
+					}
+				}
+				if(!found) {
+					toAdd.add(tef);
+				}
+			}
+			mf.worldspawn.fields.addAll(toAdd);
+			System.out.println("Worldspawn: before: " + mf.worldspawn.subobjects.size() + " + " + target.worldspawn.subobjects.size());
+			//mf.worldspawn.subobjects.addAll(target.worldspawn.subobjects);
+			//hmm, seems like having 2 "// brush 0" comments before brushes in worldspawn goes funky in TB, so just omit the comments since I cbf parsing them
+			for(int i = 0; i < target.worldspawn.subobjects.size(); i++) {
+				MapThing mt = target.worldspawn.subobjects.get(i);
+				if(mt == null) continue;
+				if(mt.comment == null || mt.comment.length() == 0) {
+					mf.worldspawn.subobjects.add(mt);
+				}
+			}
+			System.out.println("Worldspawn: after: " + mf.worldspawn.subobjects.size());
+		}
+		return mf;
 	}
 }

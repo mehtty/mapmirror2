@@ -59,9 +59,13 @@ public class QVector {
 		return "" + format(x) + " " + format(y) + " " + format(z);
 	}
 	
-	public void rotate() {
-		x = x * -1;
-		y = y * -1;
+	public void transform(boolean flipx, boolean flipy, boolean flipz, double movex, double movey, double movez) {
+		if(flipx) x = x * -1;
+		if(flipy) y = y * -1;
+		if(flipz) z = z * -1;
+		x += movex;
+		y += movey;
+		z += movez;
 	}
 	
 	public static void main(String[] args) {

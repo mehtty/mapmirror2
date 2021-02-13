@@ -50,9 +50,9 @@ public class BrushFace {
 		return "( " + v1 + " ) ( " + v2 + " ) ( " + v3 + " ) " + texture + " " + QVector.format(xoffset) + " " + QVector.format(yoffset) + " " + QVector.format(rotation) + " " + QVector.format(xscale) + " " + QVector.format(yscale);
 	}
 	
-	public void rotate() {
-		if(v1 != null) v1.rotate();
-		if(v2 != null) v2.rotate();
-		if(v3 != null) v3.rotate();
+	public void transform(boolean flipx, boolean flipy, boolean flipz, double movex, double movey, double movez) {
+		if(v1 != null) v1.transform( flipx,  flipy,  flipz,  movex,  movey,  movez);
+		if(v2 != null) v2.transform( flipx,  flipy,  flipz,  movex,  movey,  movez);
+		if(v3 != null) v3.transform( flipx,  flipy,  flipz,  movex,  movey,  movez);
 	}
 }

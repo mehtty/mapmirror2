@@ -4,6 +4,7 @@
 	- allow to rotate arbitrary degrees (probably not)
 	- add horizontal flip
 	- add vertical flip
+	- add basic translation
 	- add option to overlay rotation
 - ent replace - add more in-depth query/update system
 - gui basics
