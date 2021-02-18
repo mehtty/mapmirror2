@@ -20,4 +20,8 @@ public class EntField {
 	public String toString() {
 		return "\"" + name + "\" \"" + value + "\"";
 	}
+	
+	public boolean valid() {
+		return name != null && name.length() > 0;
+	}
 }

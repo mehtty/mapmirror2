@@ -38,7 +38,89 @@ public class mapmirror {
 		return count;
 	}
 	
+	public int replaceEntities(Vector<MapThing> things) {
+		if(things == null) {
+			return 0;
+		}
+		int count = 0;
+		Vector<MapThing> toDelete = new Vector<MapThing>();
+		for(int i = 0; i < things.size(); i++) {
+			MapThing mt = things.get(i);
+			if(mt == null) {
+				continue;
+			}
+			System.out.println("Checking thing " + i + ": " + mt.classname);
+			boolean deleting = false;
+			for(int k = 0; k < config.field_replacements.size(); k++) {
+				FieldReplacement fr = config.field_replacements.get(k);
+				if(fr == null || !fr.valid()) continue;
+				System.out.println("\tChecking against " + k + ": " + fr);
+				int matches = 0;
+				for(int l = 0; l < fr.criteria.size(); l++) {
+					FieldCriteria fc = fr.criteria.get(l);
+					if(fc == null || !fc.valid()) continue;
+					for(int j = 0; j < mt.fields.size(); j++) {
+						EntField ef = mt.fields.get(j);
+						if(ef == null || !ef.valid()) continue;
+						if(ef.name.equals(fc.field.name)) {
+							if(fc.matchesValue(ef)) {
+								matches++;
+							} else {
+								matches = -1;
+								break;
+							}
+						}
+					}
+					if(matches < 0) break;
+				}
+				Vector<EntField> fieldsToDelete = new Vector<EntField>();
+				if(matches >= fr.criteria.size()) {
+					//apply results
+					if(fr.delete) {
+						toDelete.add(mt);
+						deleting = true;
+						break;
+					} else {
+						for(int l = 0; l < fr.results.size(); l++) {
+							FieldResult frs = fr.results.get(l);
+							if(frs == null || !frs.valid()) continue;
+							boolean found = false;
+							for(int j = 0; j < mt.fields.size(); j++) {
+								EntField ef = mt.fields.get(j);
+								if(ef == null || !ef.valid()) continue;
+								if(ef.name.equals(frs.field.name)) {
+									found = true;
+									if(frs.action == FieldResult.ACTION_DELETE) {
+										fieldsToDelete.add(ef);
+									} else {
+										ef.value = frs.field.value;
+									}
+								}
+							}
+							if(!found && frs.action == FieldResult.ACTION_ADD) {
+								EntField ef = new EntField();
+								ef.name = frs.field.name;
+								ef.value = frs.field.value;
+								mt.fields.add(ef);
+							}
+						}
+					}
+				}
+				
+				System.out.println("\tDeleting fields: (before: " + mt.fields.size() + " - " + fieldsToDelete.size() + ")");
+				mt.fields.removeAll(fieldsToDelete);
+				System.out.println("\tDeleting fields: (after: " + mt.fields.size() + ")");
+			}
+			if(deleting) continue;
+			count += replaceEntities(mt.subobjects);
+		}
+		if(toDelete.size() > 0) {
+			things.removeAll(toDelete);
+		}
+		return count;
+	}
 
+	/*
 	public int replaceEntities(Vector<MapThing> things) {
 		if(things == null) {
 			return 0;
@@ -105,10 +187,11 @@ public class mapmirror {
 		}
 		return count;
 	}
-	
+	*/
 	public int replaceEntities() {
 		return replaceEntities(map.stuff);
 	}
+	/*
 	public int replaceEntities2(Vector<MapThing> things, FieldReplacement fr) {
 		if(things == null || fr == null || !fr.valid()) {
 			return 0;
@@ -146,7 +229,7 @@ public class mapmirror {
 		}
 		return count;
 	}
-	
+	*/
 	public void transform(Vector<MapThing> things) {
 		for(int i = 0; i < things.size(); i++) {
 			MapThing mt = things.get(i);

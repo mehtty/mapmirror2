@@ -16,7 +16,7 @@ public class FieldReplacement {
 	public boolean delete = false;
 
 	public Vector<FieldCriteria> criteria = new Vector<FieldCriteria>();
-	public Vector<FieldResult> results = new Vector<>();
+	public Vector<FieldResult> results = new Vector<FieldResult>();
 	
 	public boolean valid() {
 		//return classname != null && fieldname != null && oldValue != null && newValue != null;

@@ -1,10 +1,21 @@
 - rotate 
-	- add config parameter for axis coord
+	- add config parameter for axis coord - meh, can do flip + translate instead
 	- allow to rotate at right angles
 	- allow to rotate arbitrary degrees (probably not)
 	- add horizontal flip
 	- add vertical flip
-	- add basic translation
-	- add option to overlay rotation
-- ent replace - add more in-depth query/update system
+	+ add basic translation
+	+ add option to overlay rotation
+	  - TB grouping tags autoupdate
++ ent replace - add more in-depth query/update system
 - gui basics
+  - unsaved changes indicator
+    - text fields
+    - check boxes
+  + entity window
+    + query window
+    + result window
+  + replacements CRUD
+  + save replacements from list
+  - replacements to have suggestions based on current map
+    - optional map load

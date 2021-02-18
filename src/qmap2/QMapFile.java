@@ -7,9 +7,9 @@ public class QMapFile {
 	public static boolean DEBUG = false;
 
 	public String name = "";
-	public Vector<MapThing> stuff = new Vector<>();
-	public Vector<String> wads = new Vector<>();
-	public Vector<Texture> textures = new Vector<>();
+	public Vector<MapThing> stuff = new Vector<MapThing>();
+	public Vector<String> wads = new Vector<String>();
+	public Vector<Texture> textures = new Vector<Texture>();
 	public MapThing worldspawn = null;
 
 	public void loadFromFile(String filename) {
@@ -112,19 +112,24 @@ public class QMapFile {
 		if(mf.worldspawn != null && target.worldspawn != null) {
 			//override fields with new values if exist, otherwise merge sets
 			Vector<EntField> toAdd = new Vector<EntField>();
+//			System.out.println("MERGING WORLDSPAWNS!");
 			for(int i = 0; i < target.worldspawn.fields.size(); i++) {
 				EntField tef = target.worldspawn.fields.get(i);
 				if(tef == null) continue;
+//				System.out.println("target " + i + " = " + tef);
 				boolean found = false;
 				for(int j = 0; j < mf.worldspawn.fields.size(); j++) {
 					EntField mef = mf.worldspawn.fields.get(j);
 					if(mef == null) continue;
-					if(tef.name == mef.name) {
+//					System.out.println("original " + j + " = " + mef);
+					if(tef.name.equals(mef.name)) {
+//						System.out.println("They are the same");
 						mef.value = tef.value;
 						found = true;
 					}
 				}
 				if(!found) {
+//					System.out.println("Thus adding " + tef);
 					toAdd.add(tef);
 				}
 			}

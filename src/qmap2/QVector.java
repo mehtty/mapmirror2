@@ -11,6 +11,10 @@ public class QVector {
 		return "" + d;
 	}
 	
+	public boolean isZero() {
+		return x == 0 && y == 0 && z == 0;
+	}
+	
 	public void parse(String str) {
 		int stage = 0;
 		String tmp = "";

@@ -15,7 +15,7 @@ public class MapThing {
 	public static String START_FACE = "(";
 	public static String END_FACE = "\n";
 	
-	public final String BRUSH = "brush", WORLDSPAWN = "worldspawn"; 
+	public final String BRUSH = "brush", WORLDSPAWN = "worldspawn", CLASSNAME = "classname" ;
 	
 	public QMapObjects qType = QMapObjects.None;
 	
@@ -24,7 +24,7 @@ public class MapThing {
 	public Vector<BrushFace> faces = new Vector<BrushFace>();
 	public String comment = null;
 	
-	public Vector<MapThing> subobjects = new Vector<>();
+	public Vector<MapThing> subobjects = new Vector<MapThing>();
 
 	public MapThing() {}
 
@@ -129,7 +129,7 @@ public class MapThing {
 	public void addField(String str) {
 		EntField ef = new EntField();
 		ef.parse(str);
-		if("classname".equals(ef.name)) {
+		if(CLASSNAME.equals(ef.name)) {
 			classname = ef.value;
 		}
 		fields.add(ef);

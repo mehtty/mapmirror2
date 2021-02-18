@@ -10,7 +10,7 @@ import java.util.Vector;
 
 public class mmuConfig {
 	public static String PREFIX_CFG = "cfg", PREFIX_WSIZE = "size", PREFIX_WLOCATION = "location", DIV = "=", SEP = ",",
-			PREFIX_LWIDTH = "listwidth";
+			PREFIX_LWIDTH = "listwidth", PREFIX_LWEIGHT = "listweight";
 	
 	public String filename = "mmu.conf";
 	
@@ -18,6 +18,7 @@ public class mmuConfig {
 	public Dimension windowSize = new Dimension(600, 400);
 	public Point windowLocation = new Point(0, 0);
 	public int listWidth = 100;
+	public double divWeight = 0.5;
 	
 	public mmuConfig() {
 	}
@@ -71,6 +72,14 @@ public class mmuConfig {
 							System.out.println("ERROR loading list width '" + line + "' from " + filename);
 						}
 					}
+				} else if(line.startsWith(PREFIX_LWEIGHT)) {
+					if(div > -1 && div < line.length()) {
+						try {
+							divWeight = Double.parseDouble(line.substring(div + 1).trim());
+						} catch (NumberFormatException nfe) {
+							System.out.println("ERROR loading list divider ratio '" + line + "' from " + filename);
+						}
+					}
 				}
 			}
 			bf.close();
@@ -92,6 +101,8 @@ public class mmuConfig {
 			bw.write(PREFIX_WLOCATION + DIV + windowLocation.x + SEP + windowLocation.y);
 			bw.newLine();
 			bw.write(PREFIX_LWIDTH + DIV + listWidth);
+			bw.newLine();
+			bw.write(PREFIX_LWEIGHT + DIV + divWeight);
 			bw.newLine();
 			bw.close();
 		} catch (Exception ex) {
