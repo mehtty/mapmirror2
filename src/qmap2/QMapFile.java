@@ -7,18 +7,26 @@ public class QMapFile {
 	public static boolean DEBUG = false;
 
 	public String name = "";
+	public String filename = "";
 	public Vector<MapThing> stuff = new Vector<MapThing>();
 	public Vector<String> wads = new Vector<String>();
 	public Vector<Texture> textures = new Vector<Texture>();
 	public MapThing worldspawn = null;
 
-	public void loadFromFile(String filename) {
+	public boolean loadFromFile(String filename) {
 		BufferedReader bf;
 		try {
+			this.filename = filename;
 			bf = new BufferedReader(new FileReader(filename));
-			name = filename.substring(0, filename.lastIndexOf('.'));
-			if (DEBUG)
-				System.out.println("Reading map: " + name);
+			int index = filename.lastIndexOf('.');
+			if(index > 0) {
+				name = filename.substring(0, index);
+			}
+			index = filename.lastIndexOf(File.pathSeparator);
+			if(index > 0 && name.length() > 0) {
+				name = name.substring(index + 1);
+			}
+			if (DEBUG) System.out.println("Reading map: " + name);
 			MapThing qmo = new MapThing();
 			while (qmo.readFromFile(bf, this)) {
 				stuff.add(qmo);
@@ -31,7 +39,9 @@ public class QMapFile {
 			bf.close();
 		} catch (Exception ex) {
 			System.out.println("Error reading file " + filename + ": " + ex.getMessage());
+			return false;
 		}
+		return true;
 	}
 
 	public Texture addTexture(Texture tex) {
@@ -134,7 +144,7 @@ public class QMapFile {
 				}
 			}
 			mf.worldspawn.fields.addAll(toAdd);
-			System.out.println("Worldspawn: before: " + mf.worldspawn.subobjects.size() + " + " + target.worldspawn.subobjects.size());
+			if(DEBUG)System.out.println("Worldspawn: before: " + mf.worldspawn.subobjects.size() + " + " + target.worldspawn.subobjects.size());
 			//mf.worldspawn.subobjects.addAll(target.worldspawn.subobjects);
 			//hmm, seems like having 2 "// brush 0" comments before brushes in worldspawn goes funky in TB, so just omit the comments since I cbf parsing them
 			for(int i = 0; i < target.worldspawn.subobjects.size(); i++) {
@@ -144,7 +154,7 @@ public class QMapFile {
 					mf.worldspawn.subobjects.add(mt);
 				}
 			}
-			System.out.println("Worldspawn: after: " + mf.worldspawn.subobjects.size());
+			if(DEBUG)System.out.println("Worldspawn: after: " + mf.worldspawn.subobjects.size());
 		}
 		return mf;
 	}

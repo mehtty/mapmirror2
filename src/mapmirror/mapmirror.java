@@ -12,7 +12,10 @@ public class mapmirror {
 	
 	public static boolean DEBUG = false;
 	public ConfigFile config = new ConfigFile();
+	public String overrideMapname, overrideOutname;
 	public QMapFile map = new QMapFile(), map_original = null;
+	
+	int debug_depth = 0;
 	
 	public mapmirror() {
 		config.filename = "mapmirror.conf";
@@ -30,7 +33,8 @@ public class mapmirror {
 				if(t == null || t.name == null) continue;
 				if(t.name.equals(tr.oldTexture)) {
 					if(DEBUG) System.out.println("Replacing " + t.name + " -> " + tr.newTexture);
-					map.textures.get(i).name = tr.newTexture;
+					//map.textures.get(i).name = tr.newTexture;
+					t.name = tr.newTexture;
 					count++;
 				}
 			}
@@ -42,6 +46,7 @@ public class mapmirror {
 		if(things == null) {
 			return 0;
 		}
+		debug_depth++;
 		int count = 0;
 		Vector<MapThing> toDelete = new Vector<MapThing>();
 		for(int i = 0; i < things.size(); i++) {
@@ -49,12 +54,12 @@ public class mapmirror {
 			if(mt == null) {
 				continue;
 			}
-			System.out.println("Checking thing " + i + ": " + mt.classname);
+			if(DEBUG) System.out.println("["+ debug_depth + "] Checking thing " + i + ": " + mt.classname);
 			boolean deleting = false;
-			for(int k = 0; k < config.field_replacements.size(); k++) {
+			for(int k = 0; k < config.field_replacements.size() && mt.hasFields; k++) {
 				FieldReplacement fr = config.field_replacements.get(k);
 				if(fr == null || !fr.valid()) continue;
-				System.out.println("\tChecking against " + k + ": " + fr);
+				if(DEBUG) System.out.println("["+ debug_depth + "] \tChecking against " + k + ": " + fr);
 				int matches = 0;
 				for(int l = 0; l < fr.criteria.size(); l++) {
 					FieldCriteria fc = fr.criteria.get(l);
@@ -65,7 +70,9 @@ public class mapmirror {
 						if(ef.name.equals(fc.field.name)) {
 							if(fc.matchesValue(ef)) {
 								matches++;
+								if(DEBUG) System.out.println("\t\tField " + fc + " matches " + ef + "! Total now: " + matches);
 							} else {
+								if(DEBUG) System.out.println("\t\tField " + fc + " match failed " + ef + "! Giving up");
 								matches = -1;
 								break;
 							}
@@ -73,14 +80,17 @@ public class mapmirror {
 					}
 					if(matches < 0) break;
 				}
+				if(DEBUG) System.out.println("\t\tFound " + matches + " matches vs " + fr.criteria.size());
 				Vector<EntField> fieldsToDelete = new Vector<EntField>();
 				if(matches >= fr.criteria.size()) {
 					//apply results
 					if(fr.delete) {
+						if(DEBUG) System.out.println("["+ debug_depth + "] \t\tSetting to delete");
 						toDelete.add(mt);
 						deleting = true;
 						break;
 					} else {
+						if(DEBUG) System.out.println("["+ debug_depth + "] \t\tApplying field effects");
 						for(int l = 0; l < fr.results.size(); l++) {
 							FieldResult frs = fr.results.get(l);
 							if(frs == null || !frs.valid()) continue;
@@ -107,16 +117,19 @@ public class mapmirror {
 					}
 				}
 				
-				System.out.println("\tDeleting fields: (before: " + mt.fields.size() + " - " + fieldsToDelete.size() + ")");
+				if(DEBUG) System.out.println("["+ debug_depth + "] \tDeleting fields: (before: " + mt.fields.size() + " - " + fieldsToDelete.size() + ")");
 				mt.fields.removeAll(fieldsToDelete);
-				System.out.println("\tDeleting fields: (after: " + mt.fields.size() + ")");
+				if(DEBUG) System.out.println("["+ debug_depth + "] \tDeleting fields: (after: " + mt.fields.size() + ")");
 			}
 			if(deleting) continue;
+			if(DEBUG) System.out.println("["+ debug_depth + "] \tChecking subobjects (" + mt.subobjects.size() + ")");
 			count += replaceEntities(mt.subobjects);
 		}
 		if(toDelete.size() > 0) {
 			things.removeAll(toDelete);
 		}
+		if(DEBUG) System.out.println("["+ debug_depth + "] \tDone");
+		debug_depth--;
 		return count;
 	}
 
@@ -261,7 +274,7 @@ public class mapmirror {
 							ef.value = QVector.format(angle);
 						}
 					} catch (NumberFormatException nfe) {
-						System.out.println("Failed to rotate angle of entity " + mt);
+						if(DEBUG) System.out.println("Failed to rotate angle of entity " + mt);
 					}
 				}
 			}
@@ -298,9 +311,9 @@ public class mapmirror {
 				} else if("-c".equals(args[i]) && i+1 < args.length) {
 					config.filename = args[++i];
 				} else if("-o".equals(args[i]) && i+1 < args.length) {
-					config.outname = args[++i];
+					overrideOutname = args[++i];
 				} else {
-					config.mapname = args[i];
+					overrideMapname = args[i];
 				}
 			}
 		}
@@ -313,6 +326,7 @@ public class mapmirror {
 	    System.out.print("Map Mirror %s\nMEHT\n\n" + VERSION);
 	    System.out.print("Usage: mapmirror [options] <mapfile.map>\n");
 	    System.out.print("\t-h | --help  Print this info and exit\n");
+	    System.out.print("\t-nogui       Script mode, don't launch the UI\n");
 	    System.out.print("\t-d           Print extra debugging info\n");
 	    System.out.print("\t-c <file>    Config file to use (default: mapmirror.conf)\n");
 	    System.out.print("\t-o <file>    Output file to write (default: out.map)\n");
@@ -321,9 +335,18 @@ public class mapmirror {
 	public static void main(String[] args) {
 		mapmirror m = new mapmirror();
 		m.parseCmd(args);
+		//m.config.filename = "crack.conf";
+		//m.config.mapname = "crack_b3b.map";
+		//m.config.outname = "a.out.map";
 		System.out.println("MapMirror: " + VERSION);
 		System.out.println("\tConfig: " + m.config.filename);
 		m.config.load();
+		if(m.overrideMapname != null) {
+			m.config.mapname = m.overrideMapname;
+		}
+		if(m.overrideOutname != null) {
+			m.config.outname = m.overrideOutname;
+		}
 		System.out.println("\tInput Map: " + m.config.mapname);
 		System.out.println("\tOutput Map: " + m.config.outname);
 		m.map.loadFromFile(m.config.mapname);

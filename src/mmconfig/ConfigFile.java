@@ -39,11 +39,11 @@ public class ConfigFile {
 		}
 	}
 	
-	public void load() {
-		load(filename);
+	public boolean load() {
+		return load(filename);
 	}
 	
-	public void load(String filename) {
+	public boolean load(String filename) {
 		if(filename != null) {
 			this.filename = filename;
 			BufferedReader br;
@@ -169,8 +169,10 @@ public class ConfigFile {
 				br.close();
 			} catch (Exception ex) {
 				System.out.println("Error reading config file " + filename + ": " + ex.getMessage());
+				return false;
 			}
 		}
+		return true;
 	}
 	
 	public void saveToFile() {

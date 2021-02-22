@@ -23,6 +23,7 @@ public class MapThing {
 	public Vector<EntField> fields = new Vector<EntField>();
 	public Vector<BrushFace> faces = new Vector<BrushFace>();
 	public String comment = null;
+	public boolean hasFields = false;
 	
 	public Vector<MapThing> subobjects = new Vector<MapThing>();
 
@@ -133,6 +134,7 @@ public class MapThing {
 			classname = ef.value;
 		}
 		fields.add(ef);
+		hasFields = true;
 	}
 	
 	public BrushFace addFace(String str) {

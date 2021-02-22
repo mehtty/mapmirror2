@@ -1,3 +1,3 @@
-module qmap2 {
-	requires java.desktop;
-}
+//module qmap2 {
+//	requires java.desktop;
+//}

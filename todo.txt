@@ -7,11 +7,14 @@
 	+ add basic translation
 	+ add option to overlay rotation
 	  - TB grouping tags autoupdate
+	- option to mirror textures
+	- apply all replacements vs first?
+	  - move up/down in list 
 + ent replace - add more in-depth query/update system
-- gui basics
-  - unsaved changes indicator
-    - text fields
-    - check boxes
++ gui basics
+  + unsaved changes indicator
+    + text fields
+    + check boxes
   + entity window
     + query window
     + result window
@@ -19,3 +22,12 @@
   + save replacements from list
   - replacements to have suggestions based on current map
     - optional map load
+  + field focus on dialogs
+  - notes on ents?
+  + scrollable lists
+  - ent and texture lists double up sometimes on refresh? Possibly after a run.
+  + resize subwindows
+  + save subwindow prefs
++ run the conversion! 
+  + run finish indicator
+  + some stats

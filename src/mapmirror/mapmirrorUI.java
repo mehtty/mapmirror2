@@ -9,6 +9,8 @@ import java.nio.charset.StandardCharsets;
 
 import javax.swing.*;
 import javax.swing.border.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.plaf.FontUIResource;
@@ -17,7 +19,7 @@ import mmconfig.*;
 import qmap2.QMapFile;
 import qmap2.QVector;
 
-public class mapmirrorUI implements WindowListener, ActionListener, ListSelectionListener, FocusListener, MouseListener {
+public class mapmirrorUI implements WindowListener, ActionListener, ListSelectionListener, FocusListener, MouseListener, DocumentListener, ItemListener {
 	public static String VERSION = "0.2j.g";
 	public final static String NOT_SELECTED = "No Config Selected";
 	public final static String[] QUERY_OPTIONS = {"Exact", "Any", "Not"};
@@ -25,8 +27,8 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 	
 	public mapmirror mapMirror = new mapmirror();
 	public mmuConfig config = new mmuConfig();
-	public ConfigFile currentCfg = null;
-	public QMapFile currentMap = null;
+	public ConfigFile currentCfg = null, runCfg = new ConfigFile();
+	public QMapFile currentMap = null, runMap = new QMapFile();
 	public TextureReplacement currentTextureReplacement = null;
 	public FieldReplacement currentFieldReplacement = null;
 	public boolean unsaved = false;
@@ -46,9 +48,12 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 		ICON_NEW = getScaledIcon("icons/New file.png",16,16),
 		ICON_EDIT = getScaledIcon("icons/Modify.png",16,16),
 		ICON_HIERACHY = getScaledIcon("icons/Hierarchy.png",16,16),
-		ICON_HIERACHY_OPEN = getScaledIcon("icons/HierarchyOpen.png",16,16);
+		ICON_HIERACHY_OPEN = getScaledIcon("icons/HierarchyOpen.png",16,16),
+		ICON_RUN = getScaledIcon("icons/Lightning.png",16,16),
+		ICON_UP = getScaledIcon("icons/Up.png",16,16),
+		ICON_DOWN = getScaledIcon("icons/Down.png",16,16);
 
-	JFrame frame ;
+	JFrame frame , frame_run;
 	JDialog frame_textures , frame_fields , frame_query , frame_result ;
 	JMenuBar menubar ;
 	JMenu menu_file , menu_map , menu_help ;
@@ -60,7 +65,7 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 	JLabel statusLabel , selectedConfigName ;
 	JList<String> list_configs , list_textures , list_fields ;
 	DefaultListModel<String> listModel_configs , listModel_textures , listModel_fields ;
-	JButton button_list_add , button_list_remove , button_list_copy , button_list_open , button_cfg_save , button_cfg_saveas , button_cfg_new , button_cfg_open ;
+	JButton button_list_add , button_list_remove , button_list_copy , button_list_open , button_cfg_save , button_cfg_saveas , button_cfg_new , button_cfg_open , button_run;
 	JButton button_map_browse , button_map_clear , button_outmap_browse , button_outmap_clear ;
 	JTextField text_map , text_outmap ;
 	JFileChooser file_chooser ;
@@ -70,7 +75,7 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 	JTextField text_query_name , text_query_value ;
 	JComboBox<String> combo_query_action, combo_result_action;
 	JButton button_textures_add , button_textures_remove , button_textures_edit ;
-	JButton button_fields_add , button_fields_remove , button_fields_edit ;
+	JButton button_fields_add , button_fields_remove , button_fields_edit, button_fields_up, button_fields_down ;
 	private DefaultListModel<FieldCriteria> queryListModel;
 	private JList<FieldCriteria> queryList;
 	private DefaultListModel<FieldResult> resultListModel;
@@ -85,6 +90,15 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 	private FieldResult currentResult;
 	private JTextField text_result_name;
 	private JTextField text_result_value;
+	private JTextField text_run_map;
+	private JTextField text_run_outmap;
+	private JTextField text_run_config;
+	JLabel label_run_map_status, label_run_outmap_status, label_run_config_status, label_run_status;
+	JProgressBar progress_run;
+	JTextArea text_run_log;
+	private JButton button_run_map_browse;
+	private JButton button_run_outmap_browse;
+	private JButton button_run_config_browse;
 	
 	public mapmirrorUI() {
 	}
@@ -173,10 +187,15 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 		button_cfg_saveas = new JButton(ICON_SAVE_AS);
 		button_cfg_saveas.addActionListener(this);
 		button_cfg_saveas.setToolTipText("Save config as...");
+		button_run = new JButton(ICON_RUN);
+		button_run.addActionListener(this);
+		button_run.setToolTipText("Run Conversion...");
 		toolbar.add(button_cfg_new);
 		toolbar.add(button_cfg_open);
 		toolbar.add(button_cfg_save);
 		toolbar.add(button_cfg_saveas);
+		toolbar.addSeparator();
+		toolbar.add(button_run);
 		frame.add(toolbar, BorderLayout.NORTH);
 		
 		JPanel statusBar = new JPanel();
@@ -208,18 +227,20 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 		buildFieldsFrame();
 		buildQueryFrame();
 		buildResultFrame();
+		buildRunFrame();
 	}
 	
 	public JPanel buildConfigListPanel() {
 		listModel_configs = new DefaultListModel<String>();
 		list_configs = new JList<String>(listModel_configs);
-		Dimension d = new Dimension(config.listWidth, 10);
-		list_configs.setPreferredSize(d);
-		list_configs.setSize(d);
-		list_configs.setMinimumSize(new Dimension(10,10));
+//		Dimension d = new Dimension(config.listWidth, 10);
+		//list_configs.setPreferredSize(d);
+		//list_configs.setSize(d);
+		//list_configs.setMinimumSize(new Dimension(10,10));
 //		cfgList.setBackground(new Color(0, 200, 0));
 		list_configs.addListSelectionListener(this);
 		list_configs.setBorder(new BevelBorder(BevelBorder.LOWERED));
+//		list_configs.setBorder(new LineBorder(new Color(255,0,0), 5));
 		refreshList();
 		
 		button_list_add = new JButton(ICON_ADD);
@@ -242,12 +263,31 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 		listButtons.add(button_list_copy);
 		listButtons.add(button_list_open);
 		listButtons.add(button_list_remove);
-		
+
+		JScrollPane sp1 = new JScrollPane(list_configs); 
+//		sp1.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+		//sp1.setPreferredSize(new Dimension(-1, 100));
+//		sp1.setPreferredSize(new Dimension(100, -1));
+
 		listBar = new JPanel();
 		listBar.setLayout(new BorderLayout());
 		listBar.add(new JLabel("Presets"), BorderLayout.NORTH);
-		listBar.add(list_configs, BorderLayout.CENTER);
+		listBar.add(sp1, BorderLayout.CENTER);
 		listBar.add(listButtons, BorderLayout.SOUTH);
+//		listBar.setLayout(new GridBagLayout());
+//		GridBagConstraints gbc = new GridBagConstraints();
+//		gbc.fill = GridBagConstraints.BOTH;
+//		gbc.gridx = 0;
+//		gbc.gridy = 0;
+//		gbc.weighty = 0.1;
+//		listBar.add(new JLabel("Presets"), gbc);
+//		gbc.gridy++;
+//		gbc.weighty = 1;
+//		listBar.add(sp1, gbc);
+//		gbc.gridy++;
+//		gbc.weighty = 0.1;
+//		listBar.add(listButtons, gbc);
+
 		return listBar;
 	}
 	
@@ -257,6 +297,7 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 		cfgPanel.setBorder(new EmptyBorder(10,10,10,10)); //top,left,bottom,right
 		JPanel mapPanel = new JPanel(new GridBagLayout());
 		text_map = new JTextField();
+		text_map.getDocument().addDocumentListener(this);
 		JLabel l1 = new JLabel("Map file (optional): ");
 		l1.setBorder(new EmptyBorder(0,0,0,10));
 		button_map_browse = new JButton(ICON_OPEN);
@@ -267,6 +308,7 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 		button_map_clear.setToolTipText("Clear map");
 		
 		text_outmap = new JTextField();
+		text_outmap.getDocument().addDocumentListener(this);
 		JLabel l2 = new JLabel("Output Map file (optional): ");
 		l2.setBorder(new EmptyBorder(0,0,0,10));
 		button_outmap_browse = new JButton(ICON_OPEN);
@@ -302,10 +344,12 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 		mapPanel.add(button_outmap_clear, gbc);
 		
 		selectedConfigName = new JLabel(NOT_SELECTED);
+		selectedConfigName.setIcon(ICON_NEW);
 		selectedConfigName.setHorizontalAlignment(SwingConstants.CENTER);
 		selectedConfigName.setVerticalAlignment(SwingConstants.CENTER);
 		Font f1 = selectedConfigName.getFont();
 		selectedConfigName.setFont(new FontUIResource(f1.getFontName(), Font.BOLD, f1.getSize() * 2));
+		selectedConfigName.setHorizontalTextPosition(JLabel.LEFT);
 		
 		JPanel p4 = new JPanel(new BorderLayout());
 		
@@ -315,11 +359,14 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 		
 		JPanel p5 = new JPanel(new FlowLayout(FlowLayout.LEFT));
 		check_rotate = new JCheckBox("Rotate Map 180º");
+		check_rotate.addItemListener(this);
 		check_overlay = new JCheckBox("Overlay changes over orignal");
 		check_overlay.setToolTipText("Don't forget to delete the info_tfdetect and anything else global. Worldspawns will merge automatially.");
+		check_overlay.addItemListener(this);
 		text_translate = new JTextField(10);
 		text_translate.setToolTipText("Format: 'x y z'. This is applied after the rotation");
 		text_translate.addFocusListener(this);
+		text_translate.getDocument().addDocumentListener(this);
 		
 		p5.add(check_rotate);
 		p5.add(check_overlay);
@@ -357,6 +404,7 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 		gbc.gridy++;
 		p9.add(new JLabel("New Texture: "), gbc);
 		gbc.gridx++;
+		gbc.weightx = 1;
 		text_texture_new = new JTextField(20);
 		p9.add(text_texture_new, gbc);
 		frame_textures.add(p9, BorderLayout.CENTER);
@@ -378,6 +426,9 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 		p10.add(b2);
 		frame_textures.add(p10, BorderLayout.SOUTH);
 		frame_textures.pack();
+		if(config.texturesSize != null) {
+			frame_textures.setPreferredSize(config.texturesSize);
+		}
 		return frame_textures;
 	}
 	
@@ -402,6 +453,7 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 		gbc.gridy++;
 		p9.add(new JLabel("Field Value: "), gbc);
 		gbc.gridx++;
+		gbc.weightx = 1;
 		text_query_value = new JTextField(20);
 		p9.add(text_query_value, gbc);
 		frame_query.add(p9, BorderLayout.CENTER);
@@ -419,9 +471,9 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 			} else {
 				currentQuery.action = FieldCriteria.MATCH_EXACT;
 			}
-			System.out.println("Saving query, field: " + currentQuery.field);
-			System.out.println("Saving query, query: " + currentQuery);
-			System.out.println("Saving query, replacement: " + currentFieldReplacement.toDebugString());
+			//System.out.println("Saving query, field: " + currentQuery.field);
+			//System.out.println("Saving query, query: " + currentQuery);
+			//System.out.println("Saving query, replacement: " + currentFieldReplacement.toDebugString());
 			//currentTextureReplacement.newTexture = text_texture_new.getText();
 			frame_query.setVisible(false);
 			refreshFieldsFrame(currentFieldReplacement);
@@ -435,6 +487,9 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 		p10.add(b2);
 		frame_query.add(p10, BorderLayout.SOUTH);
 		frame_query.pack();
+		if(config.querySize != null) {
+			frame_query.setPreferredSize(config.querySize);
+		}
 		return frame_query;
 	}	
 	
@@ -459,6 +514,7 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 		gbc.gridy++;
 		p9.add(new JLabel("Field Value: "), gbc);
 		gbc.gridx++;
+		gbc.weightx = 1;
 		text_result_value = new JTextField(20);
 		p9.add(text_result_value, gbc);
 		frame_result.add(p9, BorderLayout.CENTER);
@@ -476,9 +532,9 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 			} else {
 				currentResult.action = FieldResult.ACTION_NONE;
 			}
-			System.out.println("Saving result, field: " + currentResult.field);
-			System.out.println("Saving query, query: " + currentResult);
-			System.out.println("Saving query, replacement: " + currentFieldReplacement.toDebugString());
+			//System.out.println("Saving result, field: " + currentResult.field);
+			//System.out.println("Saving query, query: " + currentResult);
+			//System.out.println("Saving query, replacement: " + currentFieldReplacement.toDebugString());
 			//currentTextureReplacement.newTexture = text_texture_new.getText();
 			frame_result.setVisible(false);
 			refreshFieldsFrame(currentFieldReplacement);
@@ -492,6 +548,9 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 		p10.add(b2);
 		frame_result.add(p10, BorderLayout.SOUTH);
 		frame_result.pack();
+		if(config.resultsSize != null) {
+			frame_result.setPreferredSize(config.resultsSize);
+		}
 		return frame_result;
 	}		
 	public JDialog buildFieldsFrame() {
@@ -501,7 +560,7 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 		
 		queryListModel = new DefaultListModel<FieldCriteria>();
 		queryList = new JList<FieldCriteria>(queryListModel);
-		Dimension d = new Dimension(300, 100);
+		Dimension d = new Dimension(300, 1000);
 		queryList.setPreferredSize(d);
 		queryList.setSize(d);
 		queryList.setMinimumSize(new Dimension(10,10));
@@ -552,21 +611,29 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 		
 		
 		GridBagConstraints gbc = new GridBagConstraints();
-		gbc.fill = GridBagConstraints.HORIZONTAL;
+		gbc.fill = GridBagConstraints.BOTH;
 		gbc.gridx = gbc.gridy = 0;
+		gbc.weighty = 0.1;
 		p9.add(new JLabel("Query"), gbc);
 		p9.add(check_delete_ent);
 		gbc.gridy++;
 //		text_texture_old = new JTextField(20);
-		p9.add(queryList, gbc);
+		gbc.weightx = 0.5;
+		gbc.weighty = 1;
+		p9.add(new JScrollPane(queryList), gbc);
 		gbc.gridy = 0;
 		gbc.gridx++;
+		gbc.weightx = 0.1;
+		gbc.weighty = 0.1;
 		p9.add(new JLabel("Result"), gbc);
 		gbc.gridy++;
 //		text_texture_new = new JTextField(20);
-		p9.add(resultList, gbc);
+		gbc.weightx = 0.5;
+		gbc.weighty = 1;
+		p9.add(new JScrollPane(resultList), gbc);
 		gbc.gridy = 2;
 		gbc.gridx = 0;
+		gbc.weighty = 0.1;
 		p9.add(p_buttons_query, gbc);
 		gbc.gridx++;
 		p9.add(p_buttons_result, gbc);
@@ -593,7 +660,167 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 		p10.add(b2);
 		frame_fields.add(p10, BorderLayout.SOUTH);
 		frame_fields.pack();
+		if(config.fieldsSize != null) {
+			frame_fields.setPreferredSize(config.fieldsSize);
+		}
 		return frame_fields;
+	}
+	
+	public JFrame buildRunFrame() {
+		frame_run = new JFrame();
+		frame_run.setIconImage(ICON_MAIN.getImage());
+		frame_run.setLayout(new BorderLayout());
+		frame_run.setTitle("Convert map");
+
+		JPanel p9 = new JPanel(new GridBagLayout());
+		p9.setBorder(new EmptyBorder(10,10,10,10));
+		GridBagConstraints gbc = new GridBagConstraints();
+		gbc.fill = GridBagConstraints.HORIZONTAL;
+//		gbc.ipadx = gbc.ipady = 5;
+		gbc.gridx = gbc.gridy = 0;
+		p9.add(new JLabel("Input Map: "), gbc);
+		gbc.gridx++;
+		text_run_map = new JTextField(50);
+		text_run_map.addFocusListener(this);
+		p9.add(text_run_map, gbc);
+		gbc.gridx++;
+		button_run_map_browse = new JButton(ICON_OPEN);
+		button_run_map_browse.addActionListener(new ActionListener() { @Override public void actionPerformed(ActionEvent e) {
+			file_chooser.setSelectedFile(new File(text_run_map.getText()));
+			if(file_chooser.showDialog(frame_run, "Select") == JFileChooser.APPROVE_OPTION) {
+				text_run_map.setText(getRelativePath(file_chooser.getSelectedFile()));
+				loadRunMap();
+			}
+		}});
+		p9.add(button_run_map_browse, gbc);
+		gbc.gridx++;
+		label_run_map_status = new JLabel();
+		label_run_map_status.setBorder(new EmptyBorder(0, 10, 0, 10));
+		p9.add(label_run_map_status, gbc);
+		gbc.gridx = 0;
+		gbc.gridy++;
+		p9.add(new JLabel("Output Map: "), gbc);
+		gbc.gridx++;
+		text_run_outmap = new JTextField(50);
+		p9.add(text_run_outmap, gbc);
+		gbc.gridx++;
+		button_run_outmap_browse = new JButton(ICON_OPEN);
+		button_run_outmap_browse.addActionListener(new ActionListener() { @Override public void actionPerformed(ActionEvent e) {
+			file_chooser.setSelectedFile(new File(text_run_outmap.getText()));
+			if(file_chooser.showDialog(frame_run, "Select") == JFileChooser.APPROVE_OPTION) {
+				text_run_outmap.setText(getRelativePath(file_chooser.getSelectedFile()));
+			}
+		}});
+		p9.add(button_run_outmap_browse, gbc);
+		gbc.gridx++;
+		label_run_outmap_status = new JLabel();
+		label_run_outmap_status.setBorder(new EmptyBorder(0, 10, 0, 10));
+		p9.add(label_run_outmap_status, gbc);
+		gbc.gridx = 0;
+		gbc.gridy++;
+		p9.add(new JLabel("Conversion Config: "), gbc);
+		gbc.gridx++;
+		text_run_config = new JTextField(50);
+		text_run_config.addFocusListener(this);
+		p9.add(text_run_config, gbc);
+		gbc.gridx++;
+		button_run_config_browse = new JButton(ICON_OPEN);
+		button_run_config_browse.addActionListener(new ActionListener() { @Override public void actionPerformed(ActionEvent e) {
+			file_chooser.setSelectedFile(new File(text_run_config.getText()));
+			if(file_chooser.showDialog(frame_run, "Select") == JFileChooser.APPROVE_OPTION) {
+				text_run_config.setText(getRelativePath(file_chooser.getSelectedFile()));
+				loadRunConfig();
+			}
+		}});
+		p9.add(button_run_config_browse, gbc);
+		gbc.gridx++;
+		label_run_config_status = new JLabel();
+		label_run_config_status.setBorder(new EmptyBorder(0, 10, 0, 10));
+		p9.add(label_run_config_status, gbc);
+
+		gbc.gridx = 0;
+		gbc.gridy++;
+		p9.add(new JLabel("Run Progress: "), gbc);
+		gbc.gridx++;
+		gbc.gridwidth = 2;
+		progress_run = new JProgressBar(0, 6);
+//		progress_run.setSize(10, text_run_config.getHeight());
+		p9.add(progress_run, gbc);
+		gbc.gridwidth = 1;
+		gbc.gridx += 2;
+		label_run_status = new JLabel();
+		label_run_status.setBorder(new EmptyBorder(0, 10, 0, 10));
+		p9.add(label_run_status, gbc);
+		gbc.fill = GridBagConstraints.HORIZONTAL;
+		gbc.gridx = 0;
+		gbc.gridy++;
+		gbc.gridwidth = 3;
+		text_run_log = new JTextArea(10, 10);
+		text_run_log.setEditable(false);
+		p9.add(new JScrollPane(text_run_log), gbc);
+		frame_run.add(p9, BorderLayout.CENTER);
+		
+		JPanel p10 = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+		JButton b1 = new JButton("Run", ICON_RUN);
+		b1.addActionListener(new ActionListener() { @Override public void actionPerformed(ActionEvent e) {
+			progress_run.setValue(0);
+			label_run_status.setIcon(ICON_RUN);
+			if(runCfg == null || runCfg.filename == null || runCfg.filename.length() == 0) {
+				text_run_log.append("Invalid config\n");
+				label_run_status.setIcon(ICON_CANCEL);
+				return;
+			}
+			if(runMap == null || runMap.filename == null || runMap.filename.length() == 0) {
+				text_run_log.append("Invalid input map\n");
+				label_run_status.setIcon(ICON_CANCEL);
+				return;
+			}
+			if(runCfg != null && runMap != null) {
+				runCfg.mapname = text_run_map.getText();
+				runCfg.outname = text_run_outmap.getText();
+				text_run_log.append("Running rules file " + runCfg.filename + "\n");
+				text_run_log.append("Over " + runCfg.mapname + "\n");
+				text_run_log.append("Outputting to " + runCfg.outname + "\n");
+				//mapmirror.DEBUG = true;
+				mapMirror.config = runCfg;
+				mapMirror.map = runMap;
+				if(mapMirror.config.overlay) {
+					text_run_log.append("Overlay requested\n");
+					mapMirror.prepareOverlay();
+				}
+				progress_run.setValue(1);
+				text_run_log.append("Replaced " + mapMirror.replaceTextures() + " textures\n");
+				progress_run.setValue(2);
+				text_run_log.append("Replaced " + mapMirror.replaceEntities() + " fields\n");
+				progress_run.setValue(3);
+				text_run_log.append("Applying transformations: rotate: " + (mapMirror.config.flip_vertical && mapMirror.config.flip_horizontal) + ", translate: " + mapMirror.config.translate + "\n");
+				mapMirror.transform();
+				progress_run.setValue(4);
+				if(mapMirror.config.overlay) {
+					text_run_log.append("Applying overlay...\n");
+					mapMirror.overlay();
+				}
+				progress_run.setValue(5);
+				text_run_log.append("Saving Map: " + mapMirror.config.outname + "\n");
+				mapMirror.map.saveToFile(mapMirror.config.outname);
+				progress_run.setValue(6);
+				text_run_log.append("Completed\n\n");
+				label_run_status.setIcon(ICON_OK);
+			} else {
+				label_run_status.setIcon(ICON_CANCEL);
+			}
+			//frame_run.setVisible(false);
+		}});
+		JButton b2 = new JButton("Close", ICON_CANCEL);
+		b2.addActionListener(new ActionListener() { @Override public void actionPerformed(ActionEvent e) {
+			frame_run.setVisible(false);
+		}});
+		
+		p10.add(b1);
+		p10.add(b2);
+		frame_run.add(p10, BorderLayout.SOUTH);
+		
+		return frame_run;
 	}
 	
 	public JPanel buildTexturesList() {
@@ -604,7 +831,7 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 		
 		JPanel p6 = new JPanel(new BorderLayout());
 		p6.add(new JLabel("Texture Replacements"), BorderLayout.NORTH);
-		p6.add(list_textures, BorderLayout.CENTER);
+		p6.add(new JScrollPane(list_textures), BorderLayout.CENTER);
 		
 		JPanel p11 = new JPanel(new FlowLayout(FlowLayout.RIGHT));
 		button_textures_add = new JButton(ICON_ADD);
@@ -634,7 +861,7 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 		
 		JPanel p8 = new JPanel(new BorderLayout());
 		p8.add(new JLabel("Entity Shenanigans"), BorderLayout.NORTH);
-		p8.add(list_fields, BorderLayout.CENTER);
+		p8.add(new JScrollPane(list_fields), BorderLayout.CENTER);
 
 		JPanel p11 = new JPanel(new FlowLayout(FlowLayout.RIGHT));
 		button_fields_add = new JButton(ICON_ADD);
@@ -646,10 +873,18 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 		button_fields_remove = new JButton(ICON_REMOVE);
 		button_fields_remove.addActionListener(this);
 		button_fields_remove.setToolTipText("Remove Field Replacement");
+		button_fields_up = new JButton(ICON_UP);
+		button_fields_up.addActionListener(this);
+		button_fields_up.setToolTipText("Move Up");
+		button_fields_down = new JButton(ICON_DOWN);
+		button_fields_down.addActionListener(this);
+		button_fields_down.setToolTipText("Move Down");
 
 		p11.add(button_fields_add);
 		p11.add(button_fields_edit);
 		p11.add(button_fields_remove);
+		p11.add(button_fields_up);
+		p11.add(button_fields_down);
 		
 		p8.add(p11, BorderLayout.SOUTH);
 
@@ -660,6 +895,8 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 		if(list_configs == null || config == null || config.configFiles == null) return;
 		listModel_configs.clear();
 		listModel_configs.addAll(config.configFiles);
+		if(list_configs.getParent() != null)
+			statusLabel.setText("list height is now " + list_configs.getSize() + ", scroll size: " + list_configs.getParent().getSize());
 	}
 	
 	public void refreshQueryList() {
@@ -700,6 +937,7 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 		listModel_fields.clear();
 		if(cfg == null) {
 			selectedConfigName.setText(NOT_SELECTED);
+			selectedConfigName.setIcon(ICON_NEW);
 			text_map.setText("");
 			text_outmap.setText("");
 			text_translate.setText("");
@@ -767,6 +1005,7 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 		int index = list_textures.getSelectedIndex();
 		if(index >= 0) {
 			refreshTexturesFrame(currentCfg.texture_replacements.get(index));
+			text_texture_old.requestFocus();
 			frame_textures.setLocationRelativeTo(frame);
 			frame_textures.setVisible(true);
 		}
@@ -826,12 +1065,50 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 		}
 		//frame_fields.paintAll(frame_fields.getGraphics());
 	}	
+	public void refreshRunFrame() {
+		if(currentCfg != null) {
+			runCfg = currentCfg;
+			String name = "";
+			if(currentCfg.filename != null) {
+				name = currentCfg.filename;
+			}
+			if(unsaved) {
+				name += "(current)";
+			}
+			text_run_config.setText(name);			
+			label_run_config_status.setIcon(ICON_OK);
+		}
+		if(currentMap != null) {
+			runMap = currentMap;
+			text_run_map.setText(currentMap.name);
+			label_run_map_status.setIcon(ICON_OK);
+		} else {
+			if(runMap.loadFromFile(text_map.getText())) {
+				label_run_map_status.setIcon(ICON_OK);
+			} else {
+				label_run_map_status.setIcon(ICON_CANCEL);
+			}
+			text_run_map.setText(text_map.getText());
+		}
+		text_run_outmap.setText(text_outmap.getText());
+		//frame_fields.paintAll(frame_fields.getGraphics());
+	}	
+	
+	public void showRunFrame() {
+		refreshRunFrame();
+		text_run_map.requestFocus();
+		frame_run.setLocationRelativeTo(frame);
+		frame_run.pack();
+		frame_run.setVisible(true);
+	}
+	
 	public void showFieldsFrame() {
 		int index = list_fields.getSelectedIndex();
 		if(index >= 0) {
 			//refreshFieldsFrame(currentCfg.field_replacements.get(index));
 			currentFieldReplacement = currentCfg.field_replacements.get(index);
 			refreshFieldsFrame();
+			button_fields_add.requestFocus();
 			frame_fields.setLocationRelativeTo(frame);
 			frame_fields.pack();
 			frame_fields.setVisible(true);
@@ -843,6 +1120,7 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 		if(index >= 0) {
 			currentQuery = currentFieldReplacement.criteria.get(index);
 			refreshQueryFrame();
+			text_query_name.requestFocus();
 			frame_query.setLocationRelativeTo(frame_fields);
 			frame_query.pack();
 			frame_query.setVisible(true);
@@ -854,6 +1132,7 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 		if(index >= 0) {
 			currentResult = currentFieldReplacement.results.get(index);
 			refreshResultFrame();
+			text_result_name.requestFocus();
 			frame_result.setLocationRelativeTo(frame_fields);
 			frame_result.pack();
 			frame_result.setVisible(true);
@@ -916,6 +1195,12 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 	}
 	
 	public static void main(String[] args) {
+		for(int i = 0; i < args.length; i++) {
+			if(args[i] != null && "-nogui".equals(args[i])) {
+				mapmirror.main(args);
+				System.exit(0);
+			}
+		}
 		mapmirrorUI mmu = new mapmirrorUI();
 		mmu.loadConfig(null);
 		mmu.show();
@@ -937,6 +1222,18 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 			config.windowSize = frame.getSize();
 			config.windowLocation = frame.getLocation();
 		}
+		if(frame_textures != null) {
+			config.texturesSize = frame_textures.getSize();
+		}
+		if(frame_fields != null) {
+			config.fieldsSize = frame_fields.getSize();
+		}
+		if(frame_query != null) {
+			config.querySize = frame_query.getSize();
+		}
+		if(frame_result != null) {
+			config.resultsSize = frame_result.getSize();
+		}
 		if(list_configs != null) {
 			config.listWidth = list_configs.getWidth();
 		}
@@ -945,7 +1242,6 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 			while(c != null && c != frame) {
 				if(c instanceof JSplitPane) {
 					config.divWeight = ((JSplitPane)c).getResizeWeight();
-					System.out.println("Setting resize weight to " + config.divWeight);
 					break;
 				}
 				c = c.getParent();
@@ -1091,6 +1387,32 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 				listModel_fields.remove(index);
 				markChanged();
 			}		
+		} else if(source == button_fields_up) {
+			int index = list_fields.getSelectedIndex();
+			if(index >= 1 && currentCfg != null) {
+				FieldReplacement fr = currentCfg.field_replacements.get(index);
+				currentCfg.field_replacements.setElementAt(currentCfg.field_replacements.get(index-1), index);
+				currentCfg.field_replacements.setElementAt(fr, index-1);
+				String s = listModel_fields.get(index);
+				listModel_fields.setElementAt(listModel_fields.get(index-1), index);
+				listModel_fields.setElementAt(s, index-1);
+				list_fields.setSelectedIndex(index-1);
+				refreshPanel();
+				markChanged();
+			}		
+		} else if(source == button_fields_down) {
+			int index = list_fields.getSelectedIndex();
+			if(index >= 0  && index < (listModel_fields.size() - 1) && currentCfg != null) {
+				FieldReplacement fr = currentCfg.field_replacements.get(index);
+				currentCfg.field_replacements.setElementAt(currentCfg.field_replacements.get(index+1), index);
+				currentCfg.field_replacements.setElementAt(fr, index+1);
+				String s = listModel_fields.get(index);
+				listModel_fields.setElementAt(listModel_fields.get(index+1), index);
+				listModel_fields.setElementAt(s, index+1);
+				list_fields.setSelectedIndex(index+1);
+				refreshPanel();
+				markChanged();
+			}		
 		} else if(source == check_delete_ent) {
 			enableResultList();
 			markChanged();
@@ -1138,6 +1460,8 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 				resultListModel.remove(index);
 				markChanged();
 			}		
+		} else if(source == button_run) {
+			showRunFrame();
 		}
 		generateTitle();
 	}
@@ -1153,18 +1477,37 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 	
 	@Override
 	public void valueChanged(ListSelectionEvent e) {
+		if(e.getValueIsAdjusting()) return;
+		/*
+		 if(!e.getValueIsAdjusting()) {
+		 
+			if(currentCfg != null && unsaved) {
+				if(JOptionPane.showConfirmDialog(frame, "Save Changes?", "Save", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
+					saveCfg();
+				}
+			}
+			return;
+		}
+		*/
 		resetPanel();
 		if(list_configs.getSelectedIndex() > -1) {
 			String val = list_configs.getSelectedValue();
 			if(val != null && !(currentCfg != null && val.equals(currentCfg.filename))) {
 				currentCfg = new ConfigFile();
 				System.out.println("Loading config " + val);
-				currentCfg.load(val);
+				boolean loaded = currentCfg.load(val);
 				refreshPanel(currentCfg);
+				if(loaded) {
+					selectedConfigName.setIcon(ICON_OK);
+				} else {
+					selectedConfigName.setIcon(ICON_CANCEL);
+				}
 			}
 			button_list_copy.setEnabled(true);
 			button_list_remove.setEnabled(true);
 			unsaved = false;
+			generateTitle();
+			return;
 		} else {
 			currentCfg = null;
 			button_list_copy.setEnabled(false);
@@ -1206,12 +1549,48 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 		return s;
 	}
 	
+	public void loadRunConfig() {
+		text_run_log.append("Loading map file '" + text_run_config.getText() + "'...");
+		runCfg = new ConfigFile();
+		if(runCfg.load(text_run_config.getText())) {
+			text_run_log.append(" Success\n");
+			text_run_log.append("Config " + runCfg.filename + ": " + runCfg.mapname + " -> " + runCfg.outname + "\n");
+			text_run_log.append("\tRotate: " + ((runCfg.flip_horizontal && runCfg.flip_vertical)?"YES":"NO") + "; Overlay: " + ((runCfg.overlay)?"YES":"NO") + "; Translate " + runCfg.translate.toString() + "\n");
+			text_run_log.append("\tTexture rules: " + runCfg.texture_replacements.size() + "; Entity Rules: " + runCfg.field_replacements.size() + "\n");
+			label_run_config_status.setIcon(ICON_OK);
+		} else {
+			text_run_log.append(" FAILED\n");
+			label_run_config_status.setIcon(ICON_CANCEL);
+		}
+	}
+
+	public void loadRunMap() {
+		text_run_log.append("Loading map file '" + text_run_map.getText() + "'...");
+		runMap = new QMapFile();
+		if(runMap.loadFromFile(text_run_map.getText())) {
+			text_run_log.append(" Success\n");
+			text_run_log.append("Map " + runMap.name + " contains " + runMap.stuff.size() + " objects and " + runMap.textures.size() + " unique textures\n");
+			label_run_map_status.setIcon(ICON_OK);
+		} else {
+			text_run_log.append(" FAILED\n");
+			label_run_map_status.setIcon(ICON_CANCEL);
+		}
+	}
+	
 	@Override
 	public void focusLost(FocusEvent e) {
 		Object source = e.getSource();
 		if(source == text_translate) {
 			text_translate.setText(fixVector(text_translate.getText()));
 			markChanged();
+		} else if(source == text_run_config) {
+			if(e.getOppositeComponent() != button_run_config_browse) {
+				loadRunConfig();
+			}
+		} else if(source == text_run_map) {
+			if(e.getOppositeComponent() != button_run_map_browse) {
+				loadRunMap();
+			}
 		}
 	}
 
@@ -1256,5 +1635,25 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 
 	@Override
 	public void mouseExited(MouseEvent e) {
+	}
+
+	@Override
+	public void insertUpdate(DocumentEvent e) {
+		markChanged();
+	}
+
+	@Override
+	public void removeUpdate(DocumentEvent e) {
+		markChanged();
+	}
+
+	@Override
+	public void changedUpdate(DocumentEvent e) {
+		markChanged();
+	}
+
+	@Override
+	public void itemStateChanged(ItemEvent e) {
+		markChanged();
 	}
 }
