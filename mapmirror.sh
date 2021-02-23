@@ -1,2 +1,2 @@
 #!/bin/sh
-java -jar mapmirror0.2.jar $@
+java -jar $(dirname "$0")/mapmirror0.2.jar $@
