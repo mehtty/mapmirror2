@@ -5,6 +5,7 @@ import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.UnsupportedEncodingException;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 
 import javax.swing.*;
@@ -20,7 +21,8 @@ import qmap2.QMapFile;
 import qmap2.QVector;
 
 public class mapmirrorUI implements WindowListener, ActionListener, ListSelectionListener, FocusListener, MouseListener, DocumentListener, ItemListener {
-	public static String VERSION = "0.2j.g";
+	//public static String VERSION = "0.2j.g";
+	public static String VERSION_SUFFIX = ".g2";
 	public final static String NOT_SELECTED = "No Config Selected";
 	public final static String[] QUERY_OPTIONS = {"Exact", "Any", "Not"};
 	public final static String[] RESULT_OPTIONS = {"Update", "Insert", "Delete"};
@@ -69,7 +71,7 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 	JButton button_map_browse , button_map_clear , button_outmap_browse , button_outmap_clear ;
 	JTextField text_map , text_outmap ;
 	JFileChooser file_chooser ;
-	JCheckBox check_rotate , check_overlay , check_delete_ent ;
+	JCheckBox check_rotate , check_overlay , check_rotate_textures , check_flip_textures , check_delete_ent , check_texture_mirror;
 	JTextField text_translate ;
 	JTextField text_texture_old , text_texture_new ;
 	JTextField text_query_name , text_query_value ;
@@ -111,7 +113,7 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 	}
 	
 	public void generateTitle() {
-		String t = "Map Mirror (and other stuff) " + VERSION;
+		String t = "Map Mirror (and other stuff) " + mapmirror.VERSION + VERSION_SUFFIX;
 		if(currentCfg != null && currentCfg.filename != null) {
 			t = currentCfg.filename + " - " + t;
 			if(unsaved) t = "*" + t;
@@ -363,6 +365,12 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 		check_overlay = new JCheckBox("Overlay changes over orignal");
 		check_overlay.setToolTipText("Don't forget to delete the info_tfdetect and anything else global. Worldspawns will merge automatially.");
 		check_overlay.addItemListener(this);
+//		check_rotate_textures = new JCheckBox("Rotate Textures");
+//		check_rotate_textures.setToolTipText("It's not a good idea to use this with Texture Flip.");
+//		check_rotate_textures.addItemListener(this);
+//		check_flip_textures = new JCheckBox("Flip Textures");
+//		check_flip_textures.setToolTipText("It's not a good idea to use this with Texture Rotation.");
+//		check_flip_textures.addItemListener(this);
 		text_translate = new JTextField(10);
 		text_translate.setToolTipText("Format: 'x y z'. This is applied after the rotation");
 		text_translate.addFocusListener(this);
@@ -370,6 +378,8 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 		
 		p5.add(check_rotate);
 		p5.add(check_overlay);
+//		p5.add(check_rotate_textures);
+//		p5.add(check_flip_textures);
 		p5.add(new JLabel("Translate By: "));
 		p5.add(text_translate);
 		
@@ -384,6 +394,7 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 		split2.add(buildFieldsList(), JSplitPane.RIGHT);
 
 		p7.add(split2, BorderLayout.CENTER);
+		p7.setBorder(new BevelBorder(BevelBorder.LOWERED));
 		cfgPanel.add(p7, BorderLayout.CENTER);
 
 		return cfgPanel;
@@ -407,6 +418,12 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 		gbc.weightx = 1;
 		text_texture_new = new JTextField(20);
 		p9.add(text_texture_new, gbc);
+		gbc.gridx = 1;
+		gbc.gridy++;
+		check_texture_mirror = new JCheckBox("Mirror Texture");
+		check_texture_mirror.addActionListener(this);
+		p9.add(check_texture_mirror, gbc);
+
 		frame_textures.add(p9, BorderLayout.CENTER);
 		
 		JPanel p10 = new JPanel(new FlowLayout(FlowLayout.RIGHT));
@@ -414,6 +431,7 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 		b1.addActionListener(new ActionListener() { @Override public void actionPerformed(ActionEvent e) {
 			currentTextureReplacement.oldTexture = text_texture_old.getText();
 			currentTextureReplacement.newTexture = text_texture_new.getText();
+			currentTextureReplacement.mirror = check_texture_mirror.isSelected();
 			frame_textures.setVisible(false);
 			refreshPanel(currentCfg);
 		}});
@@ -935,6 +953,7 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 	public void refreshPanel(ConfigFile cfg) {
 		listModel_textures.clear();
 		listModel_fields.clear();
+		currentCfg = cfg;
 		if(cfg == null) {
 			selectedConfigName.setText(NOT_SELECTED);
 			selectedConfigName.setIcon(ICON_NEW);
@@ -943,6 +962,8 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 			text_translate.setText("");
 			check_rotate.setSelected(false);
 			check_overlay.setSelected(false);
+			//check_rotate_textures.setSelected(false);
+			//check_flip_textures.setSelected(false);
 		} else {
 			if(cfg.filename == null || cfg.filename.length() <= 0) {
 				selectedConfigName.setText("#Unsaved Config#");
@@ -954,9 +975,11 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 			text_translate.setText(cfg.translate.toString());
 			check_rotate.setSelected(cfg.flip_horizontal && cfg.flip_vertical);
 			check_overlay.setSelected(cfg.overlay);
+			//check_rotate_textures.setSelected(cfg.textureRotate);
+			//check_flip_textures.setSelected(cfg.textureFlip);
 			for(TextureReplacement tr : cfg.texture_replacements) {
 				if(tr != null) {
-					listModel_textures.addElement(tr.oldTexture + " -> " + tr.newTexture);
+					listModel_textures.addElement(tr.oldTexture + " -> " + tr.newTexture + (tr.mirror?" [MIRRORED]":""));
 				}
 			}
 			for(FieldReplacement fr : cfg.field_replacements) {
@@ -974,6 +997,8 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 		currentCfg.overlay = check_overlay.isSelected();
 		currentCfg.mapname = text_map.getText();
 		currentCfg.outname = text_outmap.getText();
+		currentCfg.textureRotate = check_rotate.isSelected(); //check_rotate_textures.isSelected();
+		currentCfg.textureFlip = check_rotate.isSelected(); //check_flip_textures.isSelected();
 		currentCfg.translate.parse(text_translate.getText());
 	}
 	
@@ -995,9 +1020,11 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 		if(currentTextureReplacement == null) {
 			text_texture_old.setText("");
 			text_texture_new.setText("");
+			check_texture_mirror.setSelected(false);
 		} else {
 			text_texture_old.setText(currentTextureReplacement.oldTexture);
 			text_texture_new.setText(currentTextureReplacement.newTexture);
+			check_texture_mirror.setSelected(currentTextureReplacement.mirror);
 		}
 	}
 	
@@ -1005,9 +1032,10 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 		int index = list_textures.getSelectedIndex();
 		if(index >= 0) {
 			refreshTexturesFrame(currentCfg.texture_replacements.get(index));
-			text_texture_old.requestFocus();
+			frame_textures.pack();
 			frame_textures.setLocationRelativeTo(frame);
 			frame_textures.setVisible(true);
+			text_texture_old.requestFocus();
 		}
 	}
 	
@@ -1180,6 +1208,7 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 		String f = "";
 		if(currentCfg != null) {
 			f = currentCfg.filename;
+			System.out.println("Saveas - setting current cfg path: " + currentCfg.filename);
 		}
 		updateConfig();
 		file_chooser.setSelectedFile(new File(f));
@@ -1195,15 +1224,21 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 	}
 	
 	public static void main(String[] args) {
+		ConfigFile cf = null;
 		for(int i = 0; i < args.length; i++) {
 			if(args[i] != null && "-nogui".equals(args[i])) {
 				mapmirror.main(args);
 				System.exit(0);
+			} else if(args[i] != null && "-c".equals(args[i]) && (i+1) < args.length) {
+				System.out.println("Loading external config: " + args[i+1]);
+				cf = new ConfigFile();
+				cf.load(args[i+1]);
 			}
 		}
 		mapmirrorUI mmu = new mapmirrorUI();
-		mmu.loadConfig(null);
+		mmu.loadConfig("mmu.conf");
 		mmu.show();
+		if(cf != null) mmu.refreshPanel(cf);
 	}
 
 	public void markChanged() {
@@ -1350,7 +1385,7 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 		} else if(source == menu_file_quit) {
 			frame.dispatchEvent(new WindowEvent(frame, WindowEvent.WINDOW_CLOSING));
 		} else if(source == menu_help_about) {
-			JOptionPane.showMessageDialog(frame, "Map Mirror\n" + VERSION + "\n\nBy MEHT", "About", JOptionPane.INFORMATION_MESSAGE);
+			JOptionPane.showMessageDialog(frame, "Map Mirror\n" + mapmirror.VERSION + VERSION_SUFFIX + "\n\nBy MEHT", "About", JOptionPane.INFORMATION_MESSAGE);
 		} else if(source == button_textures_edit) {
 			showTexturesFrame();
 			markChanged();
@@ -1523,7 +1558,12 @@ public class mapmirrorUI implements WindowListener, ActionListener, ListSelectio
 	
 	public static String getRelativePath(File file) {
 		if(file == null) return "";
-		String retval = new File(".").toURI().relativize(file.toURI()).toString();
+		URI uri = new File(".").toURI().relativize(file.toURI());
+		if(!"file".equals(uri.getScheme())) {
+			System.out.println("Can only work on files thanks");
+			return "";
+		}
+		String retval = uri.getPath();
 		try {
 		    retval = java.net.URLDecoder.decode(retval, StandardCharsets.UTF_8.name());
 		} catch (UnsupportedEncodingException e) {

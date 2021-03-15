@@ -11,7 +11,7 @@ import qmap2.QVector;
 
 public class ConfigFile {
 	public static final String TAG_MAPNAME = "[mapname]", TAG_OUTNAME = "[outname]", TAG_TEXTURES = "[textures]", TAG_FIELDS = "[fields]", CHAR_COMMENT = "#";
-	public static final String TAG_FLIPX = "[flipx]", TAG_FLIPY = "[flipy]", TAG_OVERLAY = "[overlay]", TAG_TRANSLATE = "[translate]";
+	public static final String TAG_FLIPX = "[flipx]", TAG_FLIPY = "[flipy]", TAG_OVERLAY = "[overlay]", TAG_TRANSLATE = "[translate]", TAG_TROTATE = "[rotatetextures]", TAG_TFLIP = "[fliptextures]";
 	public static final String TAG_FIELD_QUERY = "[query]", TAG_FIELD_RESULT = "[result]", TAG_DELETE = "[delete]";
 	public static final int STATE_NONE = 0, STATE_MAPNAME = 1, STATE_TEXTURES = 2, STATE_FIELDS = 3, STATE_OUTNAME = 4, STATE_TRANSLATE = 5, STATE_FIELD_QUERY = 6, STATE_FIELD_RESULT = 7;
 	
@@ -25,6 +25,8 @@ public class ConfigFile {
 	public boolean flip_horizontal = false;
 	public boolean flip_vertical = false;
 	public boolean overlay = false;
+	public boolean textureRotate = false;
+	public boolean textureFlip = false;
 	public QVector translate = new QVector();
 	
 	public String getLine(BufferedReader br) throws IOException {
@@ -94,6 +96,14 @@ public class ConfigFile {
 					} else if(line.startsWith(TAG_OVERLAY)) {
 						if(DEBUG)System.out.println("Overlay requested");
 						overlay = true;
+						continue;
+					} else if(line.startsWith(TAG_TROTATE)) {
+						if(DEBUG)System.out.println("Texture rotate requested");
+						textureRotate = true;
+						continue;
+					} else if(line.startsWith(TAG_TFLIP)) {
+						if(DEBUG)System.out.println("Texture Flip requested");
+						textureFlip = true;
 						continue;
 					}
 					if(state == STATE_MAPNAME) {
@@ -206,6 +216,14 @@ public class ConfigFile {
 			}
 			if(overlay) {
 				bw.write(TAG_OVERLAY);
+				bw.newLine();
+			}
+			if(textureRotate) {
+				bw.write(TAG_TROTATE);
+				bw.newLine();
+			}
+			if(textureFlip) {
+				bw.write(TAG_TFLIP);
 				bw.newLine();
 			}
 			if(translate != null && !translate.isZero()) {

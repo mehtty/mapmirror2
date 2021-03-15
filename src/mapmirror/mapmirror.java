@@ -6,7 +6,7 @@ import mmconfig.*;
 import qmap2.*;
 
 public class mapmirror {
-	public static final String VERSION = "0.2j";
+	public static final String VERSION = "0.3j";
 	
 	public static final String FIELD_ANGLE = "angle", FIELD_ORIGIN = "origin";
 	
@@ -250,7 +250,7 @@ public class mapmirror {
 			for(int j = 0; j < mt.faces.size(); j++) {
 				BrushFace bf = mt.faces.get(j);
 				if(bf == null) continue;
-				bf.transform(config.flip_horizontal, config.flip_vertical, false, config.translate.x, config.translate.y, config.translate.z);
+				bf.transform(config.flip_horizontal, config.flip_vertical, false, config.translate.x, config.translate.y, config.translate.z, config.textureRotate, config.textureFlip);
 			}
 			for(int j = 0; j < mt.fields.size(); j++) {
 				EntField ef = mt.fields.get(j);

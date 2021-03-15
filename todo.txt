@@ -8,8 +8,10 @@
 	+ add option to overlay rotation
 	  - TB grouping tags autoupdate
 	- option to mirror textures
+	  - option to flip X/Y offsets
+	  - option to detect floor/wall (to know whether to flip Y or not for example) 
 	- apply all replacements vs first?
-	  - move up/down in list 
+	  + move up/down in list 
 + ent replace - add more in-depth query/update system
 + gui basics
   + unsaved changes indicator

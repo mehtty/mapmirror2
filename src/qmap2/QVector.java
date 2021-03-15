@@ -72,6 +72,35 @@ public class QVector {
 		z += movez;
 	}
 	
+	public static QVector diff(QVector v1, QVector v2) {
+		if(v1 == null) return v2;
+		if(v2 == null) return v1;
+		QVector v = new QVector();
+		v.x = v1.x - v2.x;
+		v.y = v1.y - v2.y;
+		v.z = v1.z - v2.z;
+		return v;
+	}
+/*
+    cx = aybz − azby
+    cy = azbx − axbz
+    cz = axby − aybx	
+*/
+	public static QVector crossProduct(QVector v1, QVector v2) {
+		if(v1 == null) return v2;
+		if(v2 == null) return v1;
+		QVector v = new QVector();
+		v.x = v1.y*v2.z - v1.z*v2.y;
+		v.y = v1.z*v2.x - v1.x*v2.z;
+		v.z = v1.x*v2.y - v1.y*v2.x;
+		return v;
+	}
+	
+	public static double length(QVector v) {
+		if(v == null) return 0;
+		return Math.sqrt(Math.pow(v.x, 2) + Math.pow(v.y, 2) + Math.pow(v.z, 2));
+	}
+	
 	public static void main(String[] args) {
 		QVector v = new QVector();
 		v.parse("\"1 2 3\"");
